@@ -1,0 +1,7 @@
+{
+  "name": "AgriVoice Assistant",
+  "description": "A voice-first AI farming assistant for accessible agricultural advice.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

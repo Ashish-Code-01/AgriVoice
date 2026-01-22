@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgriVoice Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom pulse animation for the microphone */
+      @keyframes pulse-ring {
+        0% { transform: scale(0.8); opacity: 0.5; }
+        100% { transform: scale(2); opacity: 0; }
+      }
+      .animate-pulse-ring {
+        animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-stone-50 text-stone-900 h-screen overflow-hidden">
+    <div id="root" class="h-full"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
