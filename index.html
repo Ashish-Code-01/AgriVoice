@@ -1,20 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AgriVoice Assistant</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      /* Custom pulse animation for the microphone */
-      @keyframes pulse-ring {
-        0% { transform: scale(0.8); opacity: 0.5; }
-        100% { transform: scale(2); opacity: 0; }
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriVoice Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom pulse animation for the microphone */
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(0.8);
+        opacity: 0.5;
       }
-      .animate-pulse-ring {
-        animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+      100% {
+        transform: scale(2);
+        opacity: 0;
       }
-    </style>
+    }
+
+    .animate-pulse-ring {
+      animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -25,10 +34,63 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+          },
+          colors: {
+            earth: {
+              50: '#fcfaf8',
+              100: '#f7f3ef',
+              200: '#ede6dd',
+              300: '#dfcec0',
+              400: '#cfae96',
+              500: '#bf8e6e',
+              600: '#b17757',
+              700: '#935f44',
+              800: '#794f3b',
+              900: '#624132',
+            },
+            leaf: {
+              50: '#effef7',
+              100: '#dafeec',
+              200: '#b8fcdb',
+              300: '#82f7c2',
+              400: '#43e8a2',
+              500: '#1acd81',
+              600: '#0fa666',
+              700: '#108453',
+              800: '#126845',
+              900: '#11553a',
+              950: '#063020',
+            }
+          },
+          animation: {
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'spin-slow': 'spin 12s linear infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-20px)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-stone-50 text-stone-900 h-screen overflow-hidden">
-    <div id="root" class="h-full"></div>
+
+<body class="bg-stone-50 text-stone-900 h-screen">
+  <div id="root" class="h-full"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>

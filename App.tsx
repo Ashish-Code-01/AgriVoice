@@ -4,6 +4,7 @@ import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 
 import Dashboard from "./pages/Dashboard";
 import SignInPage from "./pages/SignInPage";
+import { Home } from "./pages/Home";
 
 const App: React.FC = () => {
   return (
@@ -14,18 +15,10 @@ const App: React.FC = () => {
         <Route
           path="/"
           element={
-            <>
-              <SignedIn>
-                <Navigate to="/dashboard" replace />
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
+            <Home/>
           }
         />
 
-        {/* sign-in */}
         <Route path="/sign-in/*" element={<SignInPage />} />
 
         {/* dashboard protected */}
