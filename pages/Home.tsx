@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-    Mic, Leaf, TrendingUp, Users, ArrowRight, CheckCircle,
-    Smartphone, Zap, Shield, Play, Pause, Activity
+    Mic, Leaf, TrendingUp, ArrowRight, CheckCircle, Zap, Shield, Activity
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 
@@ -83,14 +82,6 @@ export const Home = () => {
                                     Start for Free <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </span>
                             </Link>
-
-                            <button
-                                onClick={() => setIsPlaying(!isPlaying)}
-                                className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-white/5 backdrop-blur-sm border border-white/10 text-white rounded-full font-semibold hover:bg-white/10 transition-all"
-                            >
-                                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                                <span>Watch Demo</span>
-                            </button>
                         </div>
 
                         {/* Trust Badges */}
@@ -218,7 +209,7 @@ export const Home = () => {
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <div className="flex -space-x-4">
-                                            <img  src={``} className="w-12 h-12 rounded-full border-2 border-leaf-950" alt="User" />
+                                        <img src={``} className="w-12 h-12 rounded-full border-2 border-leaf-950" alt="User" />
                                     </div>
                                     <div className="text-sm font-medium text-leaf-300">+42 new today</div>
                                 </div>
@@ -344,13 +335,7 @@ export const Home = () => {
                             <p className="text-earth-400 leading-relaxed">
                                 Empowering farmers with accessible, intelligent technology designed for the field, not the office.
                             </p>
-                            <div className="flex gap-4">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-leaf-600 hover:text-white transition-colors cursor-pointer border border-white/10">
-                                        <Users className="w-5 h-5" />
-                                    </div>
-                                ))}
-                            </div>
+
                         </div>
 
                         <div>

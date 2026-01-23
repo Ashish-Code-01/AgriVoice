@@ -1,36 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { SYSTEM_INSTRUCTION } from "@/constants";
+import { useGeminiLive } from "@/hooks/useGeminiLive";
+import { UserButton } from "@clerk/clerk-react";
 
-/**
- * Mock hook for demonstration - replace with your actual useGeminiLive hook
- */
-const useGeminiLive = () => {
-  const [status, setStatus] = useState("disconnected");
-  const [transcriptions, setTranscriptions] = useState([]);
-  const [volume, setVolume] = useState(0);
-  const [error, setError] = useState("");
-
-  const connect = () => {
-    setStatus("connected");
-    setError("");
-    setTimeout(() => {
-      setTranscriptions([
-        {
-          role: "assistant",
-          text: "Hello! I'm ready to help with your farming questions. Please describe your crop issue.",
-          timestamp: Date.now()
-        }
-      ]);
-    }, 500);
-  };
-
-  const disconnect = () => {
-    setStatus("disconnected");
-    setVolume(0);
-  };
-
-  return { status, transcriptions, connect, disconnect, volume, error };
-};
 
 const SessionStatus = {
   CONNECTED: "connected",
@@ -71,10 +43,10 @@ function formatTime(ts) {
 const QuickActionButton = ({ icon, label, onClick }) => (
   <button
     onClick={onClick}
-    className="flex flex-col items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-3 shadow-sm transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-md active:scale-95"
+    className="flex flex-col items-center justify-center gap-2.5 rounded-lg bg-gradient-to-br from-white to-stone-50 px-4 py-4 shadow-sm transition-all duration-200 hover:shadow-md hover:from-emerald-50 hover:to-emerald-100 border border-stone-100 hover:border-emerald-300 active:scale-95"
   >
-    <div className="text-2xl">{icon}</div>
-    <div className="text-center text-xs font-semibold text-stone-700 leading-tight">
+    <div className="text-3xl">{icon}</div>
+    <div className="text-center text-[11px] font-semibold text-stone-700 leading-tight">
       {label}
     </div>
   </button>
@@ -85,9 +57,9 @@ const ChatBubble = ({ side = "left", children }) => {
   return (
     <div className={`flex w-full ${isLeft ? "justify-start" : "justify-end"}`}>
       <div
-        className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm ${isLeft
-            ? "bg-white border border-stone-200 text-stone-800"
-            : "bg-gradient-to-br from-emerald-600 to-emerald-700 text-white"
+        className={`max-w-[82%] rounded-xl px-4 py-3 text-sm leading-relaxed transition-all ${isLeft
+          ? "bg-stone-100 text-stone-900 shadow-none"
+          : "bg-emerald-600 text-white shadow-sm shadow-emerald-200"
           }`}
       >
         {children}
@@ -99,7 +71,7 @@ const ChatBubble = ({ side = "left", children }) => {
 const ChipButton = ({ children, onClick }) => (
   <button
     onClick={onClick}
-    className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 shadow-sm transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
+    className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 shadow-none transition-all duration-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 active:scale-95"
   >
     {children}
   </button>
@@ -107,12 +79,12 @@ const ChipButton = ({ children, onClick }) => (
 
 const Visualizer = ({ isActive, volume }) => {
   return (
-    <div className={`relative flex items-center justify-center w-16 h-16 rounded-full transition-all ${isActive ? "bg-emerald-600 shadow-lg shadow-emerald-300/50 scale-110" : "bg-emerald-600"
+    <div className={`relative flex items-center justify-center w-16 h-16 rounded-full transition-all duration-300 ${isActive ? "bg-emerald-600 shadow-lg shadow-emerald-500/40 scale-110" : "bg-emerald-600 shadow-md"
       }`}>
       {isActive && (
         <>
-          <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
-          <div className="absolute inset-0 rounded-full bg-emerald-500 animate-pulse opacity-50" />
+          <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
+          <div className="absolute inset-0 rounded-full bg-emerald-500 animate-pulse opacity-40" />
         </>
       )}
       <span className="relative text-2xl">🎤</span>
@@ -133,7 +105,6 @@ const App = () => {
   const videoInputRef = useRef(null);
   const [videoFile, setVideoFile] = useState(null);
   const [frameFile, setFrameFile] = useState(null);
-  const [preview, setPreview] = useState(null);
   const [aiResult, setAiResult] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -233,7 +204,6 @@ const App = () => {
     try {
       const frame = await extractFrame(file, 3);
       setFrameFile(frame);
-      setPreview(URL.createObjectURL(frame));
       setUploadStatus("✅ Frame extracted - ready to analyze");
     } catch (err) {
       setUploadStatus("❌ Failed to extract frame from video");
@@ -262,17 +232,6 @@ const App = () => {
     setUploadStatus("");
   };
 
-  useEffect(() => {
-    if (!selectedFile) {
-      if (!frameFile) setPreview(null);
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(selectedFile);
-    setPreview(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [selectedFile, frameFile]);
-
   const fileToBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -293,13 +252,13 @@ const App = () => {
     setAiResult("");
 
     try {
-      const apiKey = 'AIzaSyB4BUhCRKju-GaffEP-sLZ8h9xxoow3w10';
-      if (!apiKey) throw new Error("Gemini API key missing");
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) throw new Error("Gemini API key missing - set VITE_GEMINI_API_KEY in .env");
 
       const base64Data = await fileToBase64(fileToAnalyze);
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -349,7 +308,6 @@ const App = () => {
     setSelectedFile(null);
     setVideoFile(null);
     setFrameFile(null);
-    setPreview(null);
     setAiResult("");
     setUploadStatus("");
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -357,73 +315,76 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-green-50 via-white to-emerald-50">
+    <div className="min-h-screen w-full bg-stone-50">
       {/* Top bar */}
-      <header className="sticky top-0 z-50 border-b border-stone-200 bg-white/95 backdrop-blur-md shadow-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+      <header className="sticky top-0 z-50 border-b border-stone-200 bg-white shadow-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 shadow-lg text-white text-xl">
-              🌿
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-600 to-emerald-700 shadow-md text-white text-lg font-bold">
+              A
             </div>
-            <div className="leading-tight">
-              <h1 className="text-lg font-bold text-stone-900">AgriVoice</h1>
-              <p className="text-xs text-stone-500">AI Farming Assistant</p>
+            <div className="hidden sm:block leading-tight">
+              <h1 className="text-base font-bold text-stone-900">AgriVoice</h1>
+              <p className="text-xs text-stone-500">AI Assistant</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setAudioMode((v) => !v)}
-              className={`hidden sm:flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold shadow-sm transition-all ${audioMode
-                  ? "border-emerald-400 bg-emerald-50 text-emerald-700 shadow-emerald-200"
-                  : "border-stone-300 bg-white text-stone-600 hover:bg-stone-50"
+              className={`hidden sm:inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 ${audioMode
+                ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                : "bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200"
                 }`}
             >
-              {audioMode ? "🔊 Audio ON" : "🔇 Audio OFF"}
+              {audioMode ? "🔊" : "🔇"}
             </button>
+            <UserButton />
           </div>
         </div>
       </header>
 
       {/* Main */}
-      <main className="mx-auto max-w-7xl px-4 py-6">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
+      <main className="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
           {/* Chat Area */}
-          <section className="flex flex-col rounded-2xl border border-stone-200 bg-white shadow-xl overflow-hidden">
+          <section className="flex flex-col rounded-xl border border-stone-200 bg-white shadow-md overflow-hidden">
             {/* Chat header */}
-            <div className="flex items-center justify-between border-b border-stone-200 bg-gradient-to-r from-emerald-50 via-green-50 to-emerald-50 px-6 py-4">
-              <div>
-                <p className="text-base font-bold text-stone-900">Voice Chat & Image Analysis</p>
-                <p className="text-xs text-stone-600 mt-1">
-                  Tap mic to speak or upload image/video for AI analysis
-                </p>
-              </div>
+            <div className="border-b border-stone-200 bg-stone-50 px-4 py-4 md:px-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-stone-900">Voice Chat & Analysis</p>
+                  <p className="text-xs text-stone-500 mt-1">
+                    Speak or upload media for AI guidance
+                  </p>
+                </div>
 
-              <button
-                onClick={handleEmergency}
-                className="rounded-full bg-gradient-to-r from-red-600 to-red-700 px-4 py-2 text-xs font-bold text-white shadow-lg hover:shadow-xl hover:from-red-700 hover:to-red-800 transition-all active:scale-95"
-              >
-                🆘 Emergency
-              </button>
+                <button
+                  onClick={handleEmergency}
+                  className="flex-shrink-0 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white shadow-md hover:bg-red-700 transition-all active:scale-95 whitespace-nowrap"
+                >
+                  🆘 Emergency
+                </button>
+              </div>
             </div>
 
             {/* Status bar */}
-            <div className="px-6 pt-4">
+            <div className="px-4 py-3 md:px-6">
               {error ? (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
                   ⚠️ {error}
                 </div>
               ) : isConnected ? (
-                <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-3 text-sm font-semibold text-green-700">
-                  <span className="relative flex h-3 w-3">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
-                    <span className="relative inline-flex h-3 w-3 rounded-full bg-green-600"></span>
+                <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs font-medium text-green-700">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-600 opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-600"></span>
                   </span>
-                  Listening... Speak now 🎙️
+                  Listening...
                 </div>
               ) : (
-                <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-semibold text-stone-700">
-                  ✅ Ready - Tap mic to start or upload media
+                <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs font-medium text-stone-600">
+                  ✓ Ready to assist
                 </div>
               )}
             </div>
@@ -431,22 +392,22 @@ const App = () => {
             {/* Messages */}
             <div
               ref={chatRef}
-              className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-[400px] max-h-[500px]"
+              className="flex-1 overflow-y-auto px-4 py-4 md:px-6 space-y-3 min-h-[400px] max-h-[550px]"
             >
               {/* Welcome message */}
               <ChatBubble side="left">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-200 text-lg flex-shrink-0">
+                <div className="flex items-start gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-base flex-shrink-0">
                     🤖
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold">AgriVoice Assistant</p>
-                    <p className="text-sm leading-relaxed text-stone-700 mt-1">
-                      Welcome! I can help you in two ways: Speak your farming problem for voice guidance, or upload an image/video of your crops for AI analysis. I'll provide step-by-step solutions! ✅
+                    <p className="text-xs font-semibold text-stone-900">AgriVoice</p>
+                    <p className="text-xs leading-relaxed text-stone-800 mt-1">
+                      Speak about your farming issue or upload photos/videos for AI analysis. Get step-by-step solutions instantly! 🌱
                     </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="mt-2 flex flex-wrap gap-1">
                       <ChipButton onClick={() => speak("आप किस फसल के बारे में पूछना चाहते हैं?", "hi-IN")}>
-                        🔊 Play Hindi
+                        🔊 Hindi
                       </ChipButton>
                     </div>
                   </div>
@@ -458,9 +419,9 @@ const App = () => {
                 const isUser = t.role === "user";
                 return (
                   <ChatBubble key={idx} side={isUser ? "right" : "left"}>
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2">
                       <div
-                        className={`flex h-10 w-10 items-center justify-center rounded-xl text-lg flex-shrink-0 ${isUser ? "bg-white/20" : "bg-gradient-to-br from-emerald-100 to-emerald-200"
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg text-base flex-shrink-0 ${isUser ? "bg-emerald-200" : "bg-emerald-100"
                           }`}
                       >
                         {isUser ? "👨‍🌾" : "🤖"}
@@ -468,23 +429,23 @@ const App = () => {
 
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold">
-                            {isUser ? "Farmer" : "AgriVoice"}
+                          <p className="text-xs font-semibold text-stone-900">
+                            {isUser ? "You" : "AgriVoice"}
                           </p>
-                          <span className="text-[10px] opacity-70">
+                          <span className="text-[10px] opacity-60">
                             {formatTime(t.timestamp)}
                           </span>
                         </div>
 
-                        <p className="mt-1 text-sm leading-relaxed">
+                        <p className="mt-1 text-xs leading-relaxed">
                           {t.text || (isUser ? "🎤 Voice message" : "🔊 Reply")}
                         </p>
 
                         {!isUser && t.text && (
-                          <div className="mt-3 flex flex-wrap gap-2">
+                          <div className="mt-2 flex flex-wrap gap-1">
                             <button
                               onClick={() => speak(t.text, "hi-IN")}
-                              className="rounded-full border border-emerald-400 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition-all hover:bg-emerald-100 active:scale-95"
+                              className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 transition-all hover:bg-emerald-100 active:scale-95"
                             >
                               🔁 Replay
                             </button>
@@ -497,7 +458,7 @@ const App = () => {
                                   alert("✅ Copied!");
                                 }
                               }}
-                              className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-bold text-stone-700 transition-all hover:bg-stone-100 active:scale-95"
+                              className="rounded-full border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 transition-all hover:bg-stone-100 active:scale-95"
                             >
                               📤 Share
                             </button>
@@ -512,21 +473,21 @@ const App = () => {
               {/* Image Analysis Result */}
               {aiResult && (
                 <ChatBubble side="left">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-200 text-lg flex-shrink-0">
+                  <div className="flex items-start gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-base flex-shrink-0">
                       🤖
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold">AI Analysis Result</p>
-                      <div className="mt-2 text-sm leading-relaxed whitespace-pre-wrap">
+                      <p className="text-xs font-semibold text-stone-900">Analysis Result</p>
+                      <div className="mt-1 text-xs leading-relaxed whitespace-pre-wrap text-stone-800">
                         {aiResult}
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <div className="mt-2 flex flex-wrap gap-1">
                         <button
                           onClick={() => speak(aiResult, "hi-IN")}
-                          className="rounded-full border border-emerald-400 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition-all hover:bg-emerald-100 active:scale-95"
+                          className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 transition-all hover:bg-emerald-100 active:scale-95"
                         >
-                          🔁 Read Aloud
+                          🔁 Read
                         </button>
                         <button
                           onClick={() => {
@@ -535,7 +496,7 @@ const App = () => {
                               alert("✅ Copied!");
                             }
                           }}
-                          className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-bold text-stone-700 transition-all hover:bg-stone-100 active:scale-95"
+                          className="rounded-full border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 transition-all hover:bg-stone-100 active:scale-95"
                         >
                           📋 Copy
                         </button>
@@ -544,49 +505,37 @@ const App = () => {
                   </div>
                 </ChatBubble>
               )}
-
-              {/* Preview uploaded media */}
-              {preview && (
-                <div className="flex justify-center">
-                  <div className="rounded-xl border-2 border-emerald-200 overflow-hidden shadow-lg max-w-sm">
-                    <img src={preview} alt="Preview" className="w-full h-auto" />
-                    <div className="bg-emerald-50 px-3 py-2 text-xs text-emerald-800 font-semibold text-center">
-                      {videoFile ? "📹 Frame from video" : "📸 Uploaded image"}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Bottom Controls */}
-            <div className="border-t border-stone-200 bg-gradient-to-r from-stone-50 to-gray-50 p-5">
+            <div className="border-t border-stone-200 bg-white p-4 md:p-6 space-y-4">
               {uploadStatus && (
-                <div className={`mb-3 rounded-lg px-4 py-2 text-sm font-semibold text-center ${uploadStatus.includes('❌') ? 'bg-red-50 text-red-700 border border-red-200' :
-                    uploadStatus.includes('✅') ? 'bg-green-50 text-green-700 border border-green-200' :
-                      'bg-blue-50 text-blue-700 border border-blue-200'
+                <div className={`rounded-lg px-4 py-2 text-xs font-medium text-center ${uploadStatus.includes('❌') ? 'bg-red-50 text-red-700 border border-red-200' :
+                  uploadStatus.includes('✅') ? 'bg-green-50 text-green-700 border border-green-200' :
+                    'bg-blue-50 text-blue-700 border border-blue-200'
                   }`}>
                   {uploadStatus}
                 </div>
               )}
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <button
                   onClick={handleToggle}
                   disabled={isAnalyzing}
-                  className="rounded-full focus:outline-none focus:ring-4 focus:ring-emerald-200 transition-all active:scale-95 disabled:opacity-50"
+                  className="rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all active:scale-95 disabled:opacity-50"
                   aria-label={isConnected ? "Stop listening" : "Start listening"}
                 >
                   <Visualizer isActive={isConnected} volume={volume} />
                 </button>
 
-                <div className="flex-1 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-medium text-stone-600">
+                <div className="hidden sm:block flex-1 rounded-lg border border-stone-300 bg-stone-50 px-4 py-3 text-xs font-medium text-stone-600 text-center">
                   {isConnected
-                    ? "🎙️ बोलिए… (Speak now)"
-                    : "Tap mic to ask or upload image/video"}
+                    ? "🎤 Listening..."
+                    : "Tap mic or upload media"}
                 </div>
 
                 <div className="flex gap-2">
-                  <label className="cursor-pointer">
+                  <label className="cursor-pointer flex-1 sm:flex-none">
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -595,12 +544,12 @@ const App = () => {
                       accept="image/*"
                       disabled={isAnalyzing}
                     />
-                    <div className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 font-semibold text-white text-xs shadow-md hover:shadow-lg hover:from-blue-700 hover:to-blue-800 transition-all active:scale-95">
-                      📸 Image
+                    <div className="rounded-lg bg-blue-600 px-3 py-2.5 font-medium text-white text-xs shadow-sm hover:bg-blue-700 transition-all active:scale-95 text-center">
+                      📸
                     </div>
                   </label>
 
-                  <label className="cursor-pointer">
+                  <label className="cursor-pointer flex-1 sm:flex-none">
                     <input
                       type="file"
                       accept="video/*"
@@ -609,48 +558,48 @@ const App = () => {
                       className="hidden"
                       disabled={isAnalyzing}
                     />
-                    <div className="rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 px-4 py-3 font-semibold text-white text-xs shadow-md hover:shadow-lg hover:from-purple-700 hover:to-purple-800 transition-all active:scale-95">
-                      📹 Video
+                    <div className="rounded-lg bg-purple-600 px-3 py-2.5 font-medium text-white text-xs shadow-sm hover:bg-purple-700 transition-all active:scale-95 text-center">
+                      📹
                     </div>
                   </label>
+
+                  {(selectedFile || frameFile) && (
+                    <button
+                      onClick={handleAnalyze}
+                      disabled={isAnalyzing}
+                      className="flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      {isAnalyzing ? "⏳" : "🔍"}
+                    </button>
+                  )}
+
+                  {(selectedFile || frameFile) && !isAnalyzing && (
+                    <button
+                      onClick={handleClear}
+                      className="rounded-lg bg-stone-200 px-3 py-2.5 text-xs font-semibold text-stone-700 hover:bg-stone-300 transition-all active:scale-95"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
-
-                {(selectedFile || frameFile) && (
-                  <button
-                    onClick={handleAnalyze}
-                    disabled={isAnalyzing}
-                    className="rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 px-5 py-3 text-xs font-bold text-white shadow-md hover:shadow-lg hover:from-emerald-700 hover:to-green-700 transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {isAnalyzing ? "⏳ Analyzing..." : "🔍 Analyze"}
-                  </button>
-                )}
-
-                {(selectedFile || frameFile || preview) && !isAnalyzing && (
-                  <button
-                    onClick={handleClear}
-                    className="rounded-xl bg-stone-200 px-4 py-3 text-xs font-bold text-stone-700 hover:bg-stone-300 transition-all active:scale-95"
-                  >
-                    ✕
-                  </button>
-                )}
               </div>
 
-              <p className="mt-3 text-center text-[10px] text-stone-500">
-                🔒 Secure • Not a substitute for professional inspection
+              <p className="text-center text-[10px] text-stone-500">
+                🔒 Secure • AI-powered guidance
               </p>
             </div>
           </section>
 
           {/* Right Panel */}
-          <aside className="space-y-5">
+          <aside className="space-y-5 hidden lg:block">
             {/* Quick Actions */}
-            <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-lg">
-              <p className="text-sm font-bold text-stone-900">⚡ Quick Help</p>
-              <p className="mt-1 text-xs text-stone-600">
-                Tap to start guided questions
+            <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-md">
+              <p className="text-xs font-bold text-stone-900 uppercase tracking-wide">Quick Help</p>
+              <p className="mt-1 text-xs text-stone-500">
+                Common issues
               </p>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="mt-4 grid grid-cols-2 gap-2">
                 {quickQuestions.map((x) => (
                   <QuickActionButton
                     key={x.label}
@@ -666,51 +615,51 @@ const App = () => {
             </div>
 
             {/* Tips */}
-            <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-lg">
-              <p className="text-sm font-bold text-stone-900">💡 Usage Tips</p>
+            <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-md">
+              <p className="text-xs font-bold text-stone-900 uppercase tracking-wide">Tips</p>
 
-              <ul className="mt-3 space-y-2.5 text-xs text-stone-600">
+              <ul className="mt-3 space-y-2 text-xs text-stone-600">
                 <li className="flex items-start gap-2">
-                  <span className="text-emerald-600 font-bold">✓</span>
-                  <span>Say crop + problem + days affected</span>
+                  <span className="text-emerald-600 font-bold flex-shrink-0">✓</span>
+                  <span>Describe crop, problem, and duration</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-emerald-600 font-bold">✓</span>
-                  <span>Speak slowly and clearly in a quiet place</span>
+                  <span className="text-emerald-600 font-bold flex-shrink-0">✓</span>
+                  <span>Speak clearly in quiet areas</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-emerald-600 font-bold">✓</span>
-                  <span>Upload clear photos in good lighting</span>
+                  <span className="text-emerald-600 font-bold flex-shrink-0">✓</span>
+                  <span>Upload clear, well-lit photos</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-emerald-600 font-bold">✓</span>
-                  <span>Videos auto-extract frames at 3 seconds</span>
+                  <span className="text-emerald-600 font-bold flex-shrink-0">✓</span>
+                  <span>Videos extract frames at every 2s</span>
                 </li>
               </ul>
             </div>
 
             {/* Audio Mode Card */}
-            <div className="rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-50 p-5 shadow-lg">
-              <p className="text-sm font-bold text-emerald-900">🔊 Audio Mode</p>
+            <div className="rounded-xl border border-emerald-300 bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-5 shadow-md">
+              <p className="text-xs font-bold text-emerald-900 uppercase tracking-wide">Audio</p>
               <p className="mt-1 text-xs text-emerald-700">
-                AI reads responses aloud - perfect for all farmers
+                Auto read responses
               </p>
 
               <div className="mt-4 flex gap-2">
                 <button
                   onClick={() => setAudioMode(true)}
-                  className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-bold transition-all ${audioMode
-                      ? "bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-md"
-                      : "border border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50"
+                  className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-all ${audioMode
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "border border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50"
                     }`}
                 >
                   ON
                 </button>
                 <button
                   onClick={() => setAudioMode(false)}
-                  className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-bold transition-all ${!audioMode
-                      ? "bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-md"
-                      : "border border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50"
+                  className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-all ${!audioMode
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "border border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50"
                     }`}
                 >
                   OFF
@@ -722,8 +671,8 @@ const App = () => {
       </main>
 
       {/* Footer */}
-      <footer className="mx-auto max-w-7xl px-4 py-8 text-center text-xs text-stone-500">
-        <p>AgriVoice • Built for rural voice-first farming guidance • Powered by AI</p>
+      <footer className="mx-auto max-w-7xl px-4 py-6 md:px-6 text-center text-xs text-stone-500">
+        <p>AgriVoice • AI-powered farming guidance</p>
       </footer>
     </div>
   );

@@ -14,10 +14,7 @@ export const Navbar = () => {
 
     return (
         <nav
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
-                    ? 'bg-white/20 backdrop-blur-md shadow-lg py-4'
-                    : 'bg-transparent py-6'
-                }`}
+            className={'fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/20 backdrop-blur-md shadow-lg p-4 text-white '}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center">
@@ -46,8 +43,8 @@ export const Navbar = () => {
                         <Link
                             to="/sign-in"
                             className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all transform hover:scale-105 ${scrolled
-                                    ? 'bg-leaf-600 text-white hover:bg-leaf-700 shadow-md hover:shadow-lg'
-                                    : 'bg-white text-leaf-700 hover:bg-earth-50'
+                                ? 'bg-leaf-600 text-white hover:bg-leaf-700 shadow-md hover:shadow-lg'
+                                : 'bg-white text-leaf-700 hover:bg-earth-50'
                                 }`}
                         >
                             Get Started
@@ -65,27 +62,29 @@ export const Navbar = () => {
             </div>
 
             {/* Mobile Menu */}
-            {mobileMenuOpen && (
-                <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-100 p-4 md:hidden flex flex-col space-y-4 shadow-xl">
-                    {['Features', 'How it works', 'Stories', 'Pricing'].map((item) => (
-                        <a
-                            key={item}
-                            href="#"
-                            className="text-gray-600 font-medium hover:text-leaf-600"
+            {
+                mobileMenuOpen && (
+                    <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-100 p-4 md:hidden flex flex-col space-y-4 shadow-xl">
+                        {['Features', 'How it works', 'Stories', 'Pricing'].map((item) => (
+                            <a
+                                key={item}
+                                href="#"
+                                className="text-gray-600 font-medium hover:text-leaf-600"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                {item}
+                            </a>
+                        ))}
+                        <Link
+                            to="/sign-in"
+                            className="w-full text-center py-3 bg-leaf-600 text-white rounded-lg font-semibold"
                             onClick={() => setMobileMenuOpen(false)}
                         >
-                            {item}
-                        </a>
-                    ))}
-                    <Link
-                        to="/sign-in"
-                        className="w-full text-center py-3 bg-leaf-600 text-white rounded-lg font-semibold"
-                        onClick={() => setMobileMenuOpen(false)}
-                    >
-                        Get Started
-                    </Link>
-                </div>
-            )}
-        </nav>
+                            Get Started
+                        </Link>
+                    </div>
+                )
+            }
+        </nav >
     );
 };
